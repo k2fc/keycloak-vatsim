@@ -15,12 +15,13 @@
  * limitations under the License.
  */
 
-package org.keycloak.social.discord;
+package org.keycloak.social.vatsim;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
 import org.keycloak.broker.oidc.AbstractOAuth2IdentityProvider;
+import org.keycloak.broker.oidc.OAuth2IdentityProviderConfig;
 import org.keycloak.broker.oidc.mappers.AbstractJsonUserAttributeMapper;
 import org.keycloak.broker.provider.BrokeredIdentityContext;
 import org.keycloak.broker.provider.IdentityBrokerException;
@@ -34,22 +35,23 @@ import org.keycloak.services.messages.Messages;
 import java.util.Set;
 
 /**
- * @author <a href="mailto:wadahiro@gmail.com">Hiroyuki Wada</a>
+ * @author <a href="mailto:dennis.graiani@gmail.com">Dennis Graiani</a>
  */
-public class DiscordIdentityProvider extends AbstractOAuth2IdentityProvider<DiscordIdentityProviderConfig>
-        implements SocialIdentityProvider<DiscordIdentityProviderConfig> {
+public class VatsimIdentityProvider extends AbstractOAuth2IdentityProvider<VatsimIdentityProviderConfig>
+        implements SocialIdentityProvider<VatsimIdentityProviderConfig> {
 
-    private static final Logger log = Logger.getLogger(DiscordIdentityProvider.class);
+    private static final Logger log = Logger.getLogger(VatsimIdentityProvider.class);
 
-    public static final String AUTH_URL = "https://discord.com/oauth2/authorize";
-    public static final String TOKEN_URL = "https://discord.com/api/oauth2/token";
-    public static final String PROFILE_URL = "https://discord.com/api/users/@me";
-    public static final String GROUP_URL = "https://discord.com/api/users/@me/guilds";
-    public static final String DEFAULT_SCOPE = "identify email";
-    public static final String GUILDS_SCOPE = "guilds";
+    public static String AUTH_URL = "https://auth.vatsim.net/oauth/authorize";
+    public static String TOKEN_URL = "https://auth.vatsim.net/oauth/token";
+    public static String PROFILE_URL = "https://auth.vatsim.net/api/user";
+    public static final String DEFAULT_SCOPE = "full_name email";
 
-    public DiscordIdentityProvider(KeycloakSession session, DiscordIdentityProviderConfig config) {
+    public VatsimIdentityProvider(KeycloakSession session, VatsimIdentityProviderConfig config) {
         super(session, config);
+        AUTH_URL = config.targetSandbox() ? "https://auth-dev.vatsim.net/oauth/authorize" : AUTH_URL;
+        TOKEN_URL = config.targetSandbox() ? "https://auth-dev.vatsim.net/oauth/token" : TOKEN_URL;
+        PROFILE_URL = config.targetSandbox() ? "https://auth-dev.vatsim.net/api/user" : PROFILE_URL;
         config.setAuthorizationUrl(AUTH_URL);
         config.setTokenUrl(TOKEN_URL);
         config.setUserInfoUrl(PROFILE_URL);
@@ -67,11 +69,15 @@ public class DiscordIdentityProvider extends AbstractOAuth2IdentityProvider<Disc
 
     @Override
     protected BrokeredIdentityContext extractIdentityFromProfile(EventBuilder event, JsonNode profile) {
-        BrokeredIdentityContext user = new BrokeredIdentityContext(getJsonProperty(profile, "id"));
+        var userData = profile.get("data");
+        var personalData = userData.get("personal");
+        BrokeredIdentityContext user = new BrokeredIdentityContext(getJsonProperty(userData, "cid"), getConfig());
 
-        user.setUsername(getJsonProperty(profile, "username") + "#" + getJsonProperty(profile, "discriminator"));
-        user.setEmail(getJsonProperty(profile, "email"));
-        user.setIdpConfig(getConfig());
+
+        user.setUsername(getJsonProperty(userData, "email"));
+        user.setEmail(getJsonProperty(personalData, "email"));
+        user.setFirstName(getJsonProperty(personalData, "name_first"));
+        user.setLastName(getJsonProperty(personalData, "name_last"));
         user.setIdp(this);
 
         AbstractJsonUserAttributeMapper.storeUserProfileForMapper(user, profile, getConfig().getAlias());
@@ -86,39 +92,15 @@ public class DiscordIdentityProvider extends AbstractOAuth2IdentityProvider<Disc
         try {
             profile = SimpleHttp.doGet(PROFILE_URL, session).header("Authorization", "Bearer " + accessToken).asJson();
         } catch (Exception e) {
-            throw new IdentityBrokerException("Could not obtain user profile from discord.", e);
+            throw new IdentityBrokerException("Could not obtain user profile from vatsim.", e);
         }
 
-        if (getConfig().hasAllowedGuilds()) {
-            if (!isAllowedGuild(accessToken)) {
-                throw new ErrorPageException(session, Response.Status.FORBIDDEN, Messages.INVALID_REQUESTER);
-            }
-        }
         return extractIdentityFromProfile(null, profile);
     }
 
-    protected boolean isAllowedGuild(String accessToken) {
-        try {
-            JsonNode guilds = SimpleHttp.doGet(GROUP_URL, session).header("Authorization", "Bearer " + accessToken).asJson();
-            Set<String> allowedGuilds = getConfig().getAllowedGuildsAsSet();
-            for (JsonNode guild : guilds) {
-                String guildId = getJsonProperty(guild, "id");
-                if (allowedGuilds.contains(guildId)) {
-                    return true;
-                }
-            }
-            return false;
-        } catch (Exception e) {
-            throw new IdentityBrokerException("Could not obtain guilds the current user is a member of from discord.", e);
-        }
-    }
 
     @Override
     protected String getDefaultScopes() {
-        if (getConfig().hasAllowedGuilds()) {
-            return DEFAULT_SCOPE + " " + GUILDS_SCOPE;
-        } else {
-            return DEFAULT_SCOPE;
-        }
+        return DEFAULT_SCOPE;
     }
 }

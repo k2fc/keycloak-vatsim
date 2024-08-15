@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.keycloak.social.discord;
+package org.keycloak.social.vatsim;
 
 import org.keycloak.broker.oidc.OAuth2IdentityProviderConfig;
 import org.keycloak.models.IdentityProviderModel;
@@ -26,36 +26,24 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * @author <a href="mailto:wadahiro@gmail.com">Hiroyuki Wada</a>
+ * @author <a href="mailto:dennis.graiani@gmail.com">Dennis Graiani</a>
  */
-public class DiscordIdentityProviderConfig extends OAuth2IdentityProviderConfig {
+public class VatsimIdentityProviderConfig extends OAuth2IdentityProviderConfig {
 
-    public DiscordIdentityProviderConfig(IdentityProviderModel model) {
+    public VatsimIdentityProviderConfig(IdentityProviderModel model) {
         super(model);
     }
 
-    public DiscordIdentityProviderConfig() {
+    public VatsimIdentityProviderConfig() {
     }
 
-    public String getAllowedGuilds() {
-        return getConfig().get("allowedGuilds");
+    public boolean targetSandbox() {
+        String sandbox = getConfig().get("sandbox");
+        return sandbox == null ? false : Boolean.valueOf(sandbox);
     }
 
-    public void setAllowedGuilds(String allowedGuilds) {
-        getConfig().put("allowedGuilds", allowedGuilds);
-    }
-
-    public boolean hasAllowedGuilds() {
-        String guilds = getConfig().get("allowedGuilds");
-        return guilds != null && !guilds.trim().isEmpty();
-    }
-
-    public Set<String> getAllowedGuildsAsSet() {
-        if (hasAllowedGuilds()) {
-            String guilds = getConfig().get("allowedGuilds");
-            return Arrays.stream(guilds.split(",")).map(x -> x.trim()).collect(Collectors.toSet());
-        }
-        return Collections.emptySet();
+    public void setSandbox(boolean sandbox) {
+        getConfig().put("sandbox", String.valueOf(sandbox));
     }
 
     public void setPrompt(String prompt) {
