@@ -1,6 +1,6 @@
 # keycloak-vatsim
 
-Keycloak Social Login extension for Vatsim.
+Keycloak Social Login extension for VATSIM.
 
 
 ## Install
@@ -39,5 +39,5 @@ You can see `keycloak-vatsim-<version>.jar` under `target` directory.
 
 - [Dennis Graiani](https://github.com/k2fc)
 
-Based on vatsim-discord by [Hiroyuki Wada](https://github.com/wadahiro)
+Based on keycloak-discord by [Hiroyuki Wada](https://github.com/wadahiro)
 
