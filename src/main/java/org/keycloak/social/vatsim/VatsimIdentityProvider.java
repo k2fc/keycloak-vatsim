@@ -49,12 +49,12 @@ public class VatsimIdentityProvider extends AbstractOAuth2IdentityProvider<Vatsi
 
     public VatsimIdentityProvider(KeycloakSession session, VatsimIdentityProviderConfig config) {
         super(session, config);
-        AUTH_URL = config.targetSandbox() ? "https://auth-dev.vatsim.net/oauth/authorize" : AUTH_URL;
-        TOKEN_URL = config.targetSandbox() ? "https://auth-dev.vatsim.net/oauth/token" : TOKEN_URL;
-        PROFILE_URL = config.targetSandbox() ? "https://auth-dev.vatsim.net/api/user" : PROFILE_URL;
-        config.setAuthorizationUrl(AUTH_URL);
-        config.setTokenUrl(TOKEN_URL);
-        config.setUserInfoUrl(PROFILE_URL);
+        String CTOR_AUTH_URL = config.targetSandbox() ? "https://auth-dev.vatsim.net/oauth/authorize" : AUTH_URL;
+        String CTOR_TOKEN_URL = config.targetSandbox() ? "https://auth-dev.vatsim.net/oauth/token" : TOKEN_URL;
+        String CTOR_PROFILE_URL = config.targetSandbox() ? "https://auth-dev.vatsim.net/api/user" : PROFILE_URL;
+        config.setAuthorizationUrl(CTOR_AUTH_URL);
+        config.setTokenUrl(CTOR_TOKEN_URL);
+        config.setUserInfoUrl(CTOR_PROFILE_URL);
     }
 
     @Override
