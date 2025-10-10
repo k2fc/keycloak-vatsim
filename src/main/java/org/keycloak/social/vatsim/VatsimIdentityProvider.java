@@ -47,11 +47,13 @@ public class VatsimIdentityProvider extends AbstractOAuth2IdentityProvider<Vatsi
     public static String PROFILE_URL = "https://auth.vatsim.net/api/user";
     public static final String DEFAULT_SCOPE = "full_name email";
 
+    private final String CTOR_PROFILE_URL;
+
     public VatsimIdentityProvider(KeycloakSession session, VatsimIdentityProviderConfig config) {
         super(session, config);
         String CTOR_AUTH_URL = config.targetSandbox() ? "https://auth-dev.vatsim.net/oauth/authorize" : AUTH_URL;
         String CTOR_TOKEN_URL = config.targetSandbox() ? "https://auth-dev.vatsim.net/oauth/token" : TOKEN_URL;
-        String CTOR_PROFILE_URL = config.targetSandbox() ? "https://auth-dev.vatsim.net/api/user" : PROFILE_URL;
+        CTOR_PROFILE_URL = config.targetSandbox() ? "https://auth-dev.vatsim.net/api/user" : PROFILE_URL;
         config.setAuthorizationUrl(CTOR_AUTH_URL);
         config.setTokenUrl(CTOR_TOKEN_URL);
         config.setUserInfoUrl(CTOR_PROFILE_URL);
@@ -64,7 +66,7 @@ public class VatsimIdentityProvider extends AbstractOAuth2IdentityProvider<Vatsi
 
     @Override
     protected String getProfileEndpointForValidation(EventBuilder event) {
-        return PROFILE_URL;
+        return CTOR_PROFILE_URL;
     }
 
     @Override
@@ -90,7 +92,7 @@ public class VatsimIdentityProvider extends AbstractOAuth2IdentityProvider<Vatsi
         log.debug("doGetFederatedIdentity()");
         JsonNode profile = null;
         try {
-            profile = SimpleHttp.doGet(PROFILE_URL, session).header("Authorization", "Bearer " + accessToken).asJson();
+            profile = SimpleHttp.doGet(CTOR_PROFILE_URL, session).header("Authorization", "Bearer " + accessToken).asJson();
         } catch (Exception e) {
             throw new IdentityBrokerException("Could not obtain user profile from vatsim.", e);
         }
